@@ -64,14 +64,18 @@
             <button type="submit" name="action" value="generate">Regenerate Prompt</button>
         </form>
 
-        <!-- Textbox for journaling -->
-        <textarea placeholder="Start journaling here..."></textarea>
-
-        <!-- Buttons for saving the journal and generating follow-up question -->
-        <div class="button-container">
-            <button type="button">Save Journal</button>
-            <button type="button">Generate Follow-up Question</button>
-        </div>
+        <!-- Textbox for journaling and saving the journal -->
+        <form method="POST" action="/save_entry">
+            <textarea name="journal_entry" placeholder="Start journaling here..."></textarea>
+            
+            <!-- Buttons for saving the journal and generating follow-up question -->
+            <div class="button-container">
+                <form method="POST">
+                    <button type="submit">Save Journal</button>
+                    <button type="submit">Generate Follow-up Question</button>
+                </form>
+            </div>
+        </form>
     </div>
 </body>
 </html>

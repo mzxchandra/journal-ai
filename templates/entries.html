@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Journal Entries</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .entry-box {
+            padding: 15px;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .entry-box:last-child {
+            border-bottom: none;
+        }
+        .entry-content {
+            white-space: pre-wrap;
+        }
+        .no-entries {
+            text-align: center;
+            color: #888;
+            font-size: 18px;
+        }
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        a:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Saved Journal Entries</h1>
+
+        <!-- Loop through the entries -->
+        {% if entries %}
+            {% for entry in entries %}
+                <div class="entry-box">
+                    <p class="entry-content">{{ entry.content }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-entries">No journal entries yet!</p>
+        {% endif %}
+    
+        <a href="/">Back to Journal</a> <!-- This link gets us back to the journal page (this is an anchor link, for navigating it's good enough)-->
+    </div>
+</body>
+</html>
