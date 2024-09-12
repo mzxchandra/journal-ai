@@ -47,17 +47,17 @@ def query_huggingface_api(payload):
     return response.json()
 
 # Function to extract the prompt from the generated text
-def extract_prompt(input, generated_text):
+def extract_prompt(input: str, response: list[dict])-> str:
     # Check if prompt exists in the generated text
-    if input in generated_text:
-        # Split the text and take the part after "**Prompt:**"
-        generated_text = generated_text.split(input, 1)[1].strip()
-    generated_text = generated_text.replace("*", '') if "*" in generated_text else generated_text
+    generated_text = response[0]['generated_text']
+    generated_text = generated_text.replace(input, "") if input in generated_text else generated_text
+    generated_text = generated_text.strip()
+    generated_text = generated_text.replace("\\'", "'")
     return generated_text  # Return the full text if input prompt not found
 
 # Function to generate an initial prompt
 def generate_prompt():
-    prompt = query_huggingface_api({
+    response = query_huggingface_api({
     "inputs": prompt_input,
     "parameters": {
         "max_new_tokens": 32,
@@ -65,8 +65,7 @@ def generate_prompt():
         "num_return_sequences": 1
     }
 })
-    generated_prompt = prompt[0]["generated_text"]
-    generated_prompt = extract_prompt(prompt_input, generated_prompt)
+    generated_prompt = extract_prompt(prompt_input, response)
     print("Generated Prompt:", generated_prompt)
     return generated_prompt
     
@@ -79,7 +78,7 @@ def generate_followup_question(content):
     Response should include one clear concise question, asked in a conversational tone, max new tokens you're allowed is {max_token_value}.
     """
     # Query the model with the follow-up input
-    followup = query_huggingface_api({
+    response = query_huggingface_api({
         "inputs": followup_input,
         "parameters": {
             "max_new_tokens": max_token_value,
@@ -87,8 +86,8 @@ def generate_followup_question(content):
             "num_return_sequences": 1
         }
     })
-    generated_followup = extract_prompt(followup_input, followup)
-    print(f"generated_followup: {generated_followup}")
+    generated_followup = extract_prompt(followup_input, response)
+    print(f"Generated Followup: {generated_followup}")
     return generated_followup
 
 # Route for landing page
@@ -152,9 +151,10 @@ def edit_entry(id):
                 return redirect(url_for('view_entries'))
 
             elif action == 'generate_followup':
-                print(entry.id)
+                entry.title = request.form['title']
+                entry.content = request.form['journal_entry']
+                db.session.commit()  # Save the changes
                 followup = generate_followup_question(entry.content)
-                print(followup)
                 return render_template('edit_entry.html', entry = entry, follow_up_question=followup)
         
         return render_template('edit_entry.html', entry = entry, follow_up_question="")
@@ -189,10 +189,6 @@ def delete_all_entries():
     except Exception as e:
         db.session.rollback()  # Rollback in case of any error
         return f"An error occurred: {str(e)}", 500
-
-
-
-
 
 
 # # Load the GPT-2 tokenizer and model
