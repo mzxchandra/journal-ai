@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Journal</title>
+    <title>Edit Journal Entry</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,9 +23,8 @@
             background-color: #f9f9f9;
             min-height: 100px;
         }
-        textarea {
+        textarea, input[type="text"] {
             width: 100%;
-            height: 200px;
             padding: 10px;
             margin-top: 15px;
             font-size: 16px;
@@ -48,34 +47,28 @@
             justify-content: space-between;
         }
     </style>
-</head>
 <body>
     <div class="container">
-        <h1>{{ name }}'s AI Journal</h1>
-        
         <!-- Display generated prompt -->
         <div class="prompt-box">
-            <h3>Your Prompt of the day:</h3>
-            <p>{{ prompt }}</p>
+            <h3>{{ entry_title }}</h3>
+            <p>{{ entry_date }}</p>
         </div>
-
-        <!-- Button to regenerate the prompt -->
-        <form method="POST">
-            <button type="submit" name="action" value="generate">Regenerate Prompt</button>
-        </form>
-
-        <!-- Textbox for journaling and saving the journal -->
-        <form method="POST" action="/save_entry">
-            <textarea name="journal_entry" placeholder="Start journaling here..."></textarea>
-            <input type="hidden" name="generated_prompt" value="{{ prompt }}">
+        <!-- Form for editing journal entry -->
+        <form method="POST" action="/edit_entry/{{ entry.id }}">
+            <!-- Include the title field -->
+            <input type="text" name="title" value="{{ entry.title }}" placeholder="Edit title here...">
             
-            <!-- Buttons for saving the journal and generating follow-up question -->
+            <!-- Include the current journal content in the textarea for editing -->
+            <textarea name="journal_entry" placeholder="Edit your journal entry here...">{{ entry.content }}</textarea>
+            
+            <!-- Buttons for saving the journal or generating follow-up questions -->
             <div class="button-container">
-                <button type="submit">Save Journal</button>
-                <button type="submit">Generate Follow-up Question</button>
+                <button type="submit" name="action" value="save">Save Changes</button>
+                <button type="submit" name="action" value="generate_followup">Generate Follow-up Question</button>
                 <a href="/entries">
                     <button type="button">Review Journals</button>
-                </a> 
+                </a>
             </div>
         </form>
     </div>

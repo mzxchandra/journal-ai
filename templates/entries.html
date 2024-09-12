@@ -58,14 +58,18 @@
         {% if entries %}
             {% for entry in entries %}
                 <div class="entry-box">
-                    <p class="entry-content">{{ entry.content }}</p>
+                    <h2 class="entry-title">{{ entry_title }}</h2>
+                    <p class="entry-content">{{ entry_content }}</p>
+                    <h6 class="entry-date">{{ entry_date }}</h6>
+                    <a href="/edit_entry/{{ entry_id }}">Edit</a>
+                    <a href="/delete_entry/{{ entry_id }}"> Delete</a>
                 </div>
             {% endfor %}
         {% else %}
             <p class="no-entries">No journal entries yet!</p>
         {% endif %}
     
-        <a href="/">Back to Journal</a> <!-- This link gets us back to the journal page (this is an anchor link, for navigating it's good enough)-->
+        <a href="/">Back to Today's Journal</a> <!-- This link gets us back to the journal page (this is an anchor link, for navigating it's good enough)-->
     </div>
 </body>
 </html>
