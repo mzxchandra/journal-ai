@@ -117,22 +117,23 @@ def edit_entry(id):
     try:
         # Query the journal entry by its ID
         entry = JournalEntry.query.get(id)
-        if entry:
-            if request.method == 'POST':
-                action = request.form.get('action')
+        if request.method == 'POST':
+            action = request.form.get('action')
 
-                if action == 'save':
-                    # Update the entry's title and content
-                    entry.title = request.form['title']
-                    entry.content = request.form['journal_entry']
-                    db.session.commit()  # Save the changes
-                    return redirect(url_for('view_entries'))
+            if action == 'save':
+                # Update the entry's title and content
+                entry.title = request.form['title']
+                entry.content = request.form['journal_entry']
+                db.session.commit()  # Save the changes
+                return redirect(url_for('view_entries'))
 
-                elif action == 'generate_followup':
-                    # Handle generating a follow-up question (define this logic separately)
-                    followup_prompt = generate_followup_question(entry.content)
-                    return render_template('edit_entry.html', entry=entry, entry_title=entry.title, entry_date=entry.date.strftime("%B %d, %Y"), followup_prompt=followup_prompt)
-        return "Journal entry not found.", 404
+            elif action == 'generate_followup':
+                # Handle generating a follow-up question (define this logic separately)
+                followup_prompt = generate_followup_question(entry.content)
+                return render_template('edit_entry.html', entry = entry, followup_prompt=followup_prompt)
+        
+        return render_template('edit_entry.html', entry = entry)
+    
     except Exception as e:
         db.session.rollback()
 

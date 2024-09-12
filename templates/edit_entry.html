@@ -46,13 +46,29 @@
             display: flex;
             justify-content: space-between;
         }
+        /* Style the anchor link to look like a button */
+        .button-link {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .button-link:hover {
+            background-color: #0056b3;
+        }
     </style>
+</head>
 <body>
     <div class="container">
         <!-- Display generated prompt -->
         <div class="prompt-box">
-            <h3>{{ entry_title }}</h3>
-            <p>{{ entry_date }}</p>
+            <h2>{{ entry.title }}</h2>
+            <p>{{ entry.content }}</p>
+            <h6>{{ entry.date }}</h6>
         </div>
         <!-- Form for editing journal entry -->
         <form method="POST" action="/edit_entry/{{ entry.id }}">
@@ -66,9 +82,7 @@
             <div class="button-container">
                 <button type="submit" name="action" value="save">Save Changes</button>
                 <button type="submit" name="action" value="generate_followup">Generate Follow-up Question</button>
-                <a href="/entries">
-                    <button type="button">Review Journals</button>
-                </a>
+                <a href="/entries" class="button-link">Review Journals</a>
             </div>
         </form>
     </div>
