@@ -38,6 +38,11 @@
             color: #888;
             font-size: 18px;
         }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
         a {
             display: block;
             text-align: center;
@@ -58,11 +63,13 @@
         {% if entries %}
             {% for entry in entries %}
                 <div class="entry-box">
-                    <h2 class="entry-title">{{ entry_title }}</h2>
-                    <p class="entry-content">{{ entry_content }}</p>
-                    <h6 class="entry-date">{{ entry_date }}</h6>
-                    <a href="/edit_entry/{{ entry_id }}">Edit</a>
-                    <a href="/delete_entry/{{ entry_id }}"> Delete</a>
+                    <h2 class="entry-title">{{ entry.title }}</h2>
+                    <p class="entry-content">{{ entry.content }}</p>
+                    <h6 class="entry-date">{{ entry.date }}</h6>
+                    <div class="button-container">
+                        <a href="/edit_entry/{{ entry_id }}">Edit</a>
+                        <a href="/delete_entry/{{ entry_id }}"> Delete</a>
+                    </div> 
                 </div>
             {% endfor %}
         {% else %}

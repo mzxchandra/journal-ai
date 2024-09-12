@@ -17,15 +17,13 @@ db = SQLAlchemy(app)
 
 class JournalEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(300), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.String(50), nullable=False)
 
-
-
-# Create the database and tables if they don't already exist
 with app.app_context():
-    db.create_all()
+    # db.drop_all()  # Drop all tables, for testing
+    db.create_all()  # Recreate them with the current model schema
 
 API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
 headers = {"Authorization": f"Bearer {token}"}
@@ -47,10 +45,11 @@ def query_huggingface_api(payload):
 
 # Function to extract the prompt from the generated text
 def extract_prompt(generated_text):
-    # Check if "**Prompt:**" exists in the generated text
+    # Check if prompt exists in the generated text
     if prompt_input in generated_text:
         # Split the text and take the part after "**Prompt:**"
-        return generated_text.split(prompt_input, 1)[1].strip()
+        generated_text = generated_text.split(prompt_input, 1)[1].strip()
+    generated_text = generated_text.replace("*", '')
     return generated_text  # Return the full text if "**Prompt:**" is not found
 
 
@@ -99,7 +98,7 @@ def save_entry():
     generated_prompt = request.form['generated_prompt']
     if journal_content:
         # Save the journal entry to the database
-        new_entry = JournalEntry(title = generated_prompt, content=journal_content, date=datetime.date())
+        new_entry = JournalEntry(title = generated_prompt, content=journal_content, date=datetime.now().strftime("%B %d, %Y"))
         db.session.add(new_entry)
         db.session.commit()
         db.session.close()
