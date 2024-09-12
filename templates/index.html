@@ -66,13 +66,12 @@
 
         <!-- Textbox for journaling and saving the journal -->
         <form method="POST" action="/save_entry">
-            <textarea name="journal_entry" placeholder="Start journaling here..."></textarea>
+            <textarea name="journal_entry" placeholder="Start journaling here...">{{ journal_content }}</textarea>            
             <input type="hidden" name="generated_prompt" value="{{ prompt }}">
             
             <!-- Buttons for saving the journal and generating follow-up question -->
             <div class="button-container">
                 <button type="submit">Save Journal</button>
-                <button type="submit">Generate Follow-up Question</button>
                 <a href="/entries">
                     <button type="button">Review Journals</button>
                 </a> 

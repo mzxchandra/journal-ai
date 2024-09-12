@@ -23,6 +23,14 @@
             background-color: #f9f9f9;
             min-height: 100px;
         }
+        .follow-up {
+            border: 1px solid #ccc;
+            font-size: 16px;
+            color: rgb(0, 0, 0);
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+        }
         textarea, input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -55,7 +63,7 @@
             color: white;
             text-decoration: none;
             text-align: center;
-            border-radius: 4px;
+            margin-top: 15px;
         }
         .button-link:hover {
             background-color: #0056b3;
@@ -67,9 +75,19 @@
         <!-- Display generated prompt -->
         <div class="prompt-box">
             <h2>{{ entry.title }}</h2>
-            <p>{{ entry.content }}</p>
             <h6>{{ entry.date }}</h6>
         </div>
+
+        {% if follow_up_question %}
+            <div class="follow-up">
+                <p><i>{{ follow_up_question }}</i></p>
+            </div>
+        {% else %}
+            <div class="follow-up">
+                <p>Click 'Generate Follow-up Question' to get a question!</p>
+            </div>
+        {% endif %}
+
         <!-- Form for editing journal entry -->
         <form method="POST" action="/edit_entry/{{ entry.id }}">
             <!-- Include the title field -->
