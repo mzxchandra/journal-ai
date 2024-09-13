@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
+from flask_wtf import CSRFProtect
 import requests
 from config import Config
 import os
@@ -9,9 +10,12 @@ from datetime import datetime
 app = Flask(__name__)
 app.config.from_object(Config)
 token = app.config['HUGGINGFACE_TOKEN']
-Session(app)
 
 db = SQLAlchemy(app)
+Session(app)
+#https://www.geeksforgeeks.org/csrf-protection-in-flask/
+csrf = CSRFProtect(app)
+
 
 max_token_value = 75
 
@@ -125,7 +129,6 @@ def save_entry():
         db.session.commit()
         entry_id = new_entry.id
         print(entry_id)
-        db.session.close()
         return redirect(url_for('edit_entry', id=entry_id))
     return redirect(url_for('index')) #if content or prompt missing
 

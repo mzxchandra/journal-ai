@@ -90,6 +90,7 @@
 
         <!-- Form for editing journal entry -->
         <form method="POST" action="/edit_entry/{{ entry.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <!-- Include the title field -->
             <input type="text" name="title" value="{{ entry.title }}" placeholder="Edit title here...">
             
