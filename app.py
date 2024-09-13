@@ -4,7 +4,6 @@ from flask_session import Session
 from flask_wtf import CSRFProtect
 import requests
 from config import Config
-import os
 from datetime import datetime
 
 app = Flask(__name__)
