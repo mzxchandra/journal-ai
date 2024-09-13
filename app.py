@@ -1,21 +1,14 @@
-from flask import Flask, flash, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 import requests
-import sys
+from config import Config
+import os
 from datetime import datetime
 
 app = Flask(__name__)
-token = sys.argv[3]
-app.config['SECRET_KEY'] = {sys.argv[4]}  # Required for signing sessions
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{sys.argv[1]}:{sys.argv[2]}@localhost/journal_db"
-app.config['SQLALCHEMY_POOL_SIZE'] = 10
-app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
-app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_PERMANENT"] = False
+app.config.from_object(Config)
+token = app.config['HUGGINGFACE_TOKEN']
 Session(app)
 
 db = SQLAlchemy(app)
@@ -268,4 +261,4 @@ def generate_followup_question(content):
 
 
 if __name__ == '__main__':
-    app.run(port=3000, debug=True)
+    app.run(debug=True)
