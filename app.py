@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, abort
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask_wtf import CSRFProtect
@@ -23,6 +23,9 @@ app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
 # Session settings
 app.config['SESSION_TYPE'] = "filesystem"
 app.config['SESSION_PERMANENT'] = False
+
+app.config['SECRET_KEY'] = SECRET_KEY
+
 token = HUGGINGFACE_TOKEN
 
 db = SQLAlchemy(app)
