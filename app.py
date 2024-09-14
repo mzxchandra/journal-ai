@@ -148,6 +148,7 @@ def save_entry():
         db.session.commit()
         entry_id = new_entry.id
         print(entry_id)
+        db.session.close()
         return redirect(url_for('edit_entry', id=entry_id))
     return redirect(url_for('index')) #if content or prompt missing
 
