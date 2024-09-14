@@ -25,6 +25,7 @@ app.config['SESSION_TYPE'] = "filesystem"
 app.config['SESSION_PERMANENT'] = False
 
 app.config['SECRET_KEY'] = SECRET_KEY
+app.config['WTF_CSRF_ENABLED'] = True
 
 token = HUGGINGFACE_TOKEN
 
@@ -148,7 +149,6 @@ def save_entry():
         db.session.commit()
         entry_id = new_entry.id
         print(entry_id)
-        db.session.close()
         return redirect(url_for('edit_entry', id=entry_id))
     return redirect(url_for('index')) #if content or prompt missing
 

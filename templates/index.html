@@ -61,11 +61,13 @@
 
         <!-- Button to regenerate the prompt -->
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" name="action" value="generate">Regenerate Prompt</button>
         </form>
 
         <!-- Textbox for journaling and saving the journal -->
         <form method="POST" action="/save_entry">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <textarea name="journal_entry" placeholder="Start journaling here...">{{ journal_content }}</textarea>            
             <input type="hidden" name="generated_prompt" value="{{ prompt }}">
             
