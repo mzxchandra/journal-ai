@@ -191,7 +191,8 @@ def edit_entry(id):
 # Route for deleting a specific journal entry
 @app.route('/delete_entry/<int:id>', methods=['POST', 'GET'])
 def delete_entry(id):
-    session_check()
+    if 'email' not in session:
+        return redirect("/login")
     try:
         # Query the journal entry by its ID
         entry = JournalEntry.query.get(id)
