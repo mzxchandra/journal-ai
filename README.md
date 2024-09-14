@@ -10,4 +10,4 @@ Frontend: HTML
 
 Other Tools: Huggingface API
 
-Deployed on: [title](mzxchandra.pythonanywhere.com)
+Deployed on: [python anywhere](mzxchandra.pythonanywhere.com)
