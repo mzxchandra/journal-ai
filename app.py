@@ -1,14 +1,29 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from flask_wtf import CSRFProtect
 import requests
-from config import Config
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+DATABASE_URL = os.getenv('DATABASE_URL')
+SECRET_KEY = os.getenv('SECRET_KEY')
+HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN')
+
 
 app = Flask(__name__)
-app.config.from_object(Config)
-token = app.config['HUGGINGFACE_TOKEN']
+
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_POOL_SIZE'] = 10
+app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
+app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
+# Session settings
+app.config['SESSION_TYPE'] = "filesystem"
+app.config['SESSION_PERMANENT'] = False
+token = HUGGINGFACE_TOKEN
 
 db = SQLAlchemy(app)
 Session(app)
@@ -96,7 +111,8 @@ def logout():
 # Route for landing page
 @app.route("/", methods = ['GET', 'POST'])
 def index():
-    session_check()
+    if 'email' not in session:
+        return redirect("/login")
     generated_prompt = generate_prompt()
     journal_content = ""
 
@@ -118,7 +134,8 @@ def index():
 # Route for saving journal entries
 @app.route("/save_entry", methods=['POST'])
 def save_entry():
-    session_check()
+    if 'email' not in session:
+        return redirect("/login")
     journal_content = request.form['journal_entry']
     generated_prompt = request.form['generated_prompt']
     if journal_content and generated_prompt:
@@ -134,7 +151,8 @@ def save_entry():
 # Route for viewing saved journal entries
 @app.route("/entries", methods=['GET'])
 def view_entries():
-    session_check()
+    if 'email' not in session:
+        return redirect("/login")
     # Query all saved journal entries from the database
     entries = JournalEntry.query.filter_by(user_email = session['email']).all()
     return render_template("entries.html", entries=entries)
@@ -142,7 +160,8 @@ def view_entries():
 # Route for editing a specific journal entry
 @app.route('/edit_entry/<int:id>', methods=['POST', 'GET'])
 def edit_entry(id):
-    session_check()
+    if 'email' not in session:
+        return redirect("/login")
     try:
         # Query the journal entry by its ID
         entry = JournalEntry.query.get_or_404(id)
@@ -205,10 +224,6 @@ def delete_entry(id):
 #If we get the following error
 #requests.exceptions.ConnectionError: HTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url: /models/google/gemma-2-2b-it (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x10972b380>: Failed to resolve 'api-inference.huggingface.co' ([Errno 8] nodename nor servname provided, or not known)"))
 # We should have a protocol to use a different model
-
-def session_check():
-    if 'email' not in session:
-        return redirect("/login")
 
 # Function to query model for a prompt
 def query_huggingface_api(payload):
