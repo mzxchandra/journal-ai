@@ -27,8 +27,6 @@ app.config['SESSION_PERMANENT'] = False
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
 
-token = HUGGINGFACE_TOKEN
-
 db = SQLAlchemy(app)
 Session(app)
 #https://www.geeksforgeeks.org/csrf-protection-in-flask/
@@ -54,7 +52,7 @@ with app.app_context():
 
 
 API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
-headers = {"Authorization": f"Bearer {token}"}
+headers = {"Authorization": f"Bearer {HUGGINGFACE_TOKEN}"}
 
 prompt_input = f"""
     Generate a unique journaling prompt that encourages users to reflect on specific life moments. The prompt should help them recall and explore memorable events in detail, guiding them to introspect on how those experiences shaped their life, character, or relationships.
