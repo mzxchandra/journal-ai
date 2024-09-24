@@ -116,6 +116,7 @@ def index():
         action = request.form.get('action')
         if action == "generate":
             generated_prompt = generate_prompt()
+            print("Regenerated Prompt:", generated_prompt)
         elif action == "save":
             journal_content = request.form['journal_entry']
             generated_prompt = request.form['generated_prompt']
