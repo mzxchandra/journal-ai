@@ -44,10 +44,6 @@ class User(db.Model):
     email = db.Column(db.String(50), nullable=False, unique=True, primary_key=True) #email is the primary key
     pin = db.Column(db.String(4), nullable=False) #4-digit pin for the user
 
-with app.app_context():
-    db.session.close()
-    db.get_engine(app).dispose()
-
 prompt_input = f"""
     Generate a unique journaling prompt that encourages users to reflect on specific life moments. The prompt should help them recall and explore memorable events in detail, guiding them to introspect on how those experiences shaped their life, character, or relationships.
     Here are a few examples:
