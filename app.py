@@ -112,6 +112,20 @@ def index():
     generated_prompt = generate_prompt()
     journal_content = ""
 
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == "generate":
+            generated_prompt = generate_prompt()
+        elif action == "save":
+            journal_content = request.form['journal_entry']
+            generated_prompt = request.form['generated_prompt']
+            if journal_content and generated_prompt:
+                new_entry = JournalEntry(title = generated_prompt, content=journal_content, date=datetime.now().strftime("%B %d, %Y"), user_email=session["email"])
+                db.session.add(new_entry)
+                db.session.commit()
+                return redirect(url_for('edit_entry', id=new_entry.id))
+            return redirect(url_for('index')) #if content or prompt missing
+
     # Try to retrieve an existing journal entry with the same prompt and date
     existing_entry = JournalEntry.query.filter_by(title=generated_prompt, date=datetime.now().strftime("%B %d, %Y"), user_email = session['email']).first()
     if existing_entry:
@@ -119,23 +133,6 @@ def index():
         journal_content = existing_entry.content
     print(generated_prompt)
     return render_template("index.html", name = session['email'], prompt=generated_prompt, journal_content= journal_content)
-
-# Route for saving journal entries
-@app.route("/save_entry", methods=['POST'])
-def save_entry():
-    if 'email' not in session:
-        return redirect("/login")
-    journal_content = request.form['journal_entry']
-    generated_prompt = request.form['generated_prompt']
-    if journal_content and generated_prompt:
-        # Save the journal entry to the database
-        new_entry = JournalEntry(title = generated_prompt, content=journal_content, date=datetime.now().strftime("%B %d, %Y"), user_email=session["email"])
-        db.session.add(new_entry)
-        db.session.commit()
-        entry_id = new_entry.id
-        print(entry_id)
-        return redirect(url_for('edit_entry', id=entry_id))
-    return redirect(url_for('index')) #if content or prompt missing
 
 # Route for viewing saved journal entries
 @app.route("/entries", methods=['GET'])
