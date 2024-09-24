@@ -109,27 +109,26 @@ def logout():
 def index():
     if 'email' not in session:
         return redirect("/login")
+
+    journal_entry = None
     
     if request.method == 'GET':
         generated_prompt = generate_prompt()
-        new_entry = JournalEntry(
+        journal_entry = JournalEntry(
             title=generated_prompt,
             content="",  # Empty content for now
             date=datetime.now().strftime("%B %d, %Y"),
             user_email=session["email"]
         )
-        db.session.add(new_entry)
-        db.session.commit()  # Save the new entry immediately
-
-        # Now load the entry to be edited
-        entry_id = new_entry.id
+        db.session.add(journal_entry)
+        db.session.commit()  # Save immediately
     
     else:
-        # Get the entry by ID
+        # Get committed ID
         entry_id = request.form.get('entry_id')
         journal_entry = JournalEntry.query.get(entry_id)
 
-        # Handle regenerate prompt action
+        #regenerate prompt action
         if request.form.get('action') == "generate":
             journal_entry.title = generate_prompt()  # Update prompt
             db.session.commit()  # Save the new prompt
@@ -139,10 +138,10 @@ def index():
         elif request.form.get('action') == "save":
             journal_content = request.form.get('journal_entry')
             if journal_content:
-                journal_entry.content = journal_content  # Update content
-                db.session.commit()  # Save the content
-                
-    return render_template("index.html", name = session['email'], prompt=journal_entry.title, journal_content=journal_entry.content)
+                journal_entry.content = journal_content  # Update
+                db.session.commit()
+
+    return render_template("index.html", name = session['email'], prompt=journal_entry.title, journal_content=journal_entry.content, entry_id=journal_entry.id)
 
 
 # Route for viewing saved journal entries
