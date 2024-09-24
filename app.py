@@ -11,29 +11,26 @@ load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 SECRET_KEY = os.getenv('SECRET_KEY')
 HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN')
-
+API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
+headers = {"Authorization": f"Bearer {HUGGINGFACE_TOKEN}"}
+max_token_value = 75
 
 app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_POOL_SIZE'] = 10
 app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
 app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
-# Session settings
+app.config['SQLALCHEMY_ECHO'] = True
 app.config['SESSION_TYPE'] = "filesystem"
 app.config['SESSION_PERMANENT'] = False
-
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
+app.config['DEBUG'] = True
 
 db = SQLAlchemy(app)
 Session(app)
-#https://www.geeksforgeeks.org/csrf-protection-in-flask/
-csrf = CSRFProtect(app)
-
-
-max_token_value = 75
+csrf = CSRFProtect(app) #https://www.geeksforgeeks.org/csrf-protection-in-flask/
 
 class JournalEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,11 +45,8 @@ class User(db.Model):
     pin = db.Column(db.String(4), nullable=False) #4-digit pin for the user
 
 with app.app_context():
-    db.create_all()  # Recreate them with the current model schema
-
-
-API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
-headers = {"Authorization": f"Bearer {HUGGINGFACE_TOKEN}"}
+    db.session.close()
+    db.get_engine(app).dispose()
 
 prompt_input = f"""
     Generate a unique journaling prompt that encourages users to reflect on specific life moments. The prompt should help them recall and explore memorable events in detail, guiding them to introspect on how those experiences shaped their life, character, or relationships.
@@ -63,6 +57,10 @@ prompt_input = f"""
     - "What was the most memorable trip you ever took? What made it unforgettable?"
     Have your response just be one clear and concise prompt in question form for the user, max new tokens you're allowed is {max_token_value}.
     """
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db.session.remove()
 
 # https://medium.com/@mosininamdar/how-to-make-a-signup-login-and-logout-route-in-flask-app-in-5-minutes-f5c771f7a8f3
 # Route for registering
@@ -277,8 +275,3 @@ def generate_followup_question(content):
     generated_followup = extract_prompt(followup_input, response)
     print(f"Generated Followup: {generated_followup}")
     return generated_followup
-
-
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
