@@ -61,7 +61,7 @@
 
         
         <form method="POST">
-            
+
             <!-- Button to regenerate the prompt -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" name="action" value="generate">Regenerate Prompt</button>
@@ -70,6 +70,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <textarea name="journal_entry" placeholder="Start journaling here...">{{ journal_content }}</textarea>            
             <input type="hidden" name="generated_prompt" value="{{ prompt }}">
+            <input type="hidden" name="entry_id" value="{{ entry_id }}">
             
             <!-- Buttons for saving the journal and generating follow-up question -->
             <div class="button-container">

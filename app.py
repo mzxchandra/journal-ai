@@ -109,31 +109,41 @@ def logout():
 def index():
     if 'email' not in session:
         return redirect("/login")
-    generated_prompt = generate_prompt()
-    journal_content = ""
+    
+    if request.method == 'GET':
+        generated_prompt = generate_prompt()
+        new_entry = JournalEntry(
+            title=generated_prompt,
+            content="",  # Empty content for now
+            date=datetime.now().strftime("%B %d, %Y"),
+            user_email=session["email"]
+        )
+        db.session.add(new_entry)
+        db.session.commit()  # Save the new entry immediately
 
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == "generate":
-            generated_prompt = generate_prompt()
-            print("Regenerated Prompt:", generated_prompt)
-        elif action == "save":
-            journal_content = request.form['journal_entry']
-            generated_prompt = request.form['generated_prompt']
-            if journal_content and generated_prompt:
-                new_entry = JournalEntry(title = generated_prompt, content=journal_content, date=datetime.now().strftime("%B %d, %Y"), user_email=session["email"])
-                db.session.add(new_entry)
-                db.session.commit()
-                return redirect(url_for('edit_entry', id=new_entry.id))
-            return redirect(url_for('index')) #if content or prompt missing
+        # Now load the entry to be edited
+        entry_id = new_entry.id
+    
+    else:
+        # Get the entry by ID
+        entry_id = request.form.get('entry_id')
+        journal_entry = JournalEntry.query.get(entry_id)
 
-    # Try to retrieve an existing journal entry with the same prompt and date
-    existing_entry = JournalEntry.query.filter_by(title=generated_prompt, date=datetime.now().strftime("%B %d, %Y"), user_email = session['email']).first()
-    if existing_entry:
-    # If an entry exists, pre-fill the content; otherwise, leave it blank
-        journal_content = existing_entry.content
-    print(generated_prompt)
-    return render_template("index.html", name = session['email'], prompt=generated_prompt, journal_content= journal_content)
+        # Handle regenerate prompt action
+        if request.form.get('action') == "generate":
+            journal_entry.title = generate_prompt()  # Update prompt
+            db.session.commit()  # Save the new prompt
+            return redirect(url_for('edit_entry', id=journal_entry.id))
+
+        # Handle saving the journal entry content
+        elif request.form.get('action') == "save":
+            journal_content = request.form.get('journal_entry')
+            if journal_content:
+                journal_entry.content = journal_content  # Update content
+                db.session.commit()  # Save the content
+                
+    return render_template("index.html", name = session['email'], prompt=journal_entry.title, journal_content=journal_entry.content)
+
 
 # Route for viewing saved journal entries
 @app.route("/entries", methods=['GET'])
