@@ -112,13 +112,6 @@ def index():
     generated_prompt = generate_prompt()
     journal_content = ""
 
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == "generate":
-            generated_prompt = generate_prompt()
-        else:
-            pass
-
     # Try to retrieve an existing journal entry with the same prompt and date
     existing_entry = JournalEntry.query.filter_by(title=generated_prompt, date=datetime.now().strftime("%B %d, %Y"), user_email = session['email']).first()
     if existing_entry:
