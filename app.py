@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
@@ -5,31 +6,55 @@ from flask_wtf import CSRFProtect
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
-import os
 import json
+import logging
 
+# Load environment variables
 load_dotenv()
-DATABASE_URL = os.getenv('DATABASE_URL')
-SECRET_KEY = os.getenv('SECRET_KEY')
+
+# Configuration
+DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('DATABASE_PRIVATE_URL')
+SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+
+# API Configuration
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GOOGLE_API_KEY}"
 headers = {"Content-Type": "application/json"}
 max_token_value = 100
 
-print("DATABASE_URL:", DATABASE_URL)
+# Logging setup
+if ENVIRONMENT == 'production':
+    logging.basicConfig(level=logging.INFO)
+else:
+    logging.basicConfig(level=logging.DEBUG)
+
+print(f"Environment: {ENVIRONMENT}")
+print(f"Database URL configured: {'Yes' if DATABASE_URL else 'No'}")
 
 app = Flask(__name__)
+
+# App Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_POOL_SIZE'] = 10
-app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
-app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
-app.config['SQLALCHEMY_ECHO'] = True
 app.config['SESSION_TYPE'] = "filesystem"
 app.config['SESSION_PERMANENT'] = False
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
-app.config['DEBUG'] = True
+
+# Production vs Development settings
+if ENVIRONMENT == 'production':
+    app.config['DEBUG'] = False
+    app.config['SQLALCHEMY_ECHO'] = False
+    app.config['SQLALCHEMY_POOL_SIZE'] = 20
+    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
+    app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
+else:
+    app.config['DEBUG'] = True
+    app.config['SQLALCHEMY_ECHO'] = True
+    app.config['SQLALCHEMY_POOL_SIZE'] = 10
+    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
+    app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
 
 db = SQLAlchemy(app)
 Session(app)
@@ -59,9 +84,49 @@ Examples of good prompts:
 Please provide just one clear, engaging question that would inspire meaningful writing. Keep it conversational and warm in tone.
 """
 
+def create_tables():
+    """Create database tables on first request in production."""
+    if ENVIRONMENT == 'production':
+        try:
+            db.create_all()
+            logging.info("Database tables created successfully")
+        except Exception as e:
+            logging.error(f"Error creating database tables: {e}")
+
+# Call create_tables when app starts in production
+if ENVIRONMENT == 'production':
+    with app.app_context():
+        create_tables()
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors gracefully."""
+    return render_template('base.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors gracefully."""
+    db.session.rollback()
+    if ENVIRONMENT == 'production':
+        return "Sorry, something went wrong. Please try again later.", 500
+    else:
+        return str(error), 500
+
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db.session.remove()
+
+# Health check endpoint for Railway
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring."""
+    try:
+        # Test database connection
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        return {"status": "healthy", "database": "connected"}, 200
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}, 500
 
 # https://medium.com/@mosininamdar/how-to-make-a-signup-login-and-logout-route-in-flask-app-in-5-minutes-f5c771f7a8f3
 # Route for registering
