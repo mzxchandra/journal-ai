@@ -13,7 +13,7 @@ services:
         fromDatabase:
           name: journal-ai-db
           property: connectionString
-      - key: GOOGLE_STUDIO_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
     plan: starter
 
