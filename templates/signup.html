@@ -1,19 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Register</title>
-</head>
-<body>
-    <h2>Register</h2>
-    <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required><br><br>
+{% extends "base.html" %}
 
-        <label for="pin">4-digit PIN:</label>
-        <input type="password" id="pin" name="pin" maxlength="4" required><br><br>
+{% block title %}Create Account - My Journal{% endblock %}
 
-        <button type="submit">Register</button>
-    </form>
-</body>
-</html>
+{% block content %}
+<div class="max-w-2xl mx-auto px-6">
+    <!-- Welcome Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-journal-blue mb-4 text-shadow">
+            Join My Journal
+        </h1>
+        <p class="text-2xl text-journal-gray">
+            Create your account to start capturing your thoughts and memories
+        </p>
+    </div>
+
+    <!-- Signup Form -->
+    <div class="bg-white border-2 border-gray-300 rounded-xl shadow-lg p-8">
+        <form method="POST" class="space-y-8">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Email Field -->
+            <div>
+                <label for="email" class="block text-2xl font-semibold text-journal-gray mb-3">
+                    📧 Your Email Address
+                </label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       required
+                       class="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:border-journal-blue focus:outline-none focus-visible:focus"
+                       placeholder="Enter your email address">
+                <p class="text-lg text-gray-500 mt-2">We'll use this to identify your account</p>
+            </div>
+
+            <!-- PIN Field -->
+            <div>
+                <label for="pin" class="block text-2xl font-semibold text-journal-gray mb-3">
+                    🔢 Create a 4-Digit PIN
+                </label>
+                <input type="password" 
+                       id="pin" 
+                       name="pin" 
+                       minlength="4"
+                       maxlength="4" 
+                       required
+                       class="w-full px-6 py-4 text-xl border-2 border-gray-300 rounded-lg focus:border-journal-blue focus:outline-none focus-visible:focus text-center"
+                       placeholder="• • • •"
+                       style="letter-spacing: 0.5em;">
+                <p class="text-lg text-gray-500 mt-2">Choose 4 numbers you'll remember easily (like 1234 or your birth year)</p>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full bg-journal-green hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-2xl transition-gentle btn-large focus-visible:focus">
+                📝 Create My Account
+            </button>
+        </form>
+
+        <!-- Login Link -->
+        <div class="text-center mt-8 pt-6 border-t-2 border-gray-200">
+            <p class="text-xl text-journal-gray mb-4">Already have an account?</p>
+            <a href="/login" 
+               class="bg-journal-blue hover:bg-blue-800 text-white px-8 py-4 rounded-lg font-semibold text-xl transition-gentle btn-large inline-block">
+                🔓 Sign In Instead
+            </a>
+        </div>
+    </div>
+
+    <!-- What to Expect -->
+    <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6 mt-8">
+        <h3 class="text-2xl font-bold text-journal-green mb-4">🌟 What You'll Get</h3>
+        <ul class="text-xl text-journal-gray space-y-2">
+            <li>• Daily writing prompts to inspire your thoughts</li>
+            <li>• A safe, private space to record your memories</li>
+            <li>• Easy access to all your past journal entries</li>
+            <li>• Simple, easy-to-use interface designed for you</li>
+        </ul>
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mt-6">
+        <h3 class="text-2xl font-bold text-journal-blue mb-4">🔒 Your Privacy Matters</h3>
+        <p class="text-xl text-journal-gray">
+            Your journal entries are private and secure. We only use your email to identify your account, 
+            and your personal thoughts stay between you and your journal.
+        </p>
+    </div>
+</div>
+{% endblock %}

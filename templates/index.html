@@ -1,85 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Journal</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-        }
-        .prompt-box {
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-top: 20px;
-            background-color: #f9f9f9;
-            min-height: 100px;
-        }
-        textarea {
-            width: 100%;
-            height: 200px;
-            padding: 10px;
-            margin-top: 15px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ name }}'s AI Journal</h1>
-        
-        <!-- Display generated prompt -->
-        <div class="prompt-box">
-            <h3>Your Prompt of the day:</h3>
-            <p>{{ prompt }}</p>
-        </div>
+{% extends "base.html" %}
 
+{% block title %}Better Days - Write Your Story Today{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6">
+    <!-- Welcome Header -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-journal-blue mb-4 text-shadow">
+            Welcome to Your Journal, {{ name }}!
+        </h1>
+        <p class="text-2xl text-journal-gray">
+            Take a moment to reflect on your day and capture your thoughts.
+        </p>
+    </div>
+
+    <!-- Today's Writing Prompt -->
+    <div class="bg-white border-2 border-journal-blue rounded-xl shadow-lg p-8 mb-8">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-journal-green rounded-full flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold text-journal-gray">Today's Writing Prompt</h2>
+        </div>
+        
+        <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-journal-blue">
+            <p class="text-2xl text-journal-gray leading-relaxed font-medium">
+                {{ prompt }}
+            </p>
+        </div>
+        
+        <!-- Regenerate Prompt Button -->
+        <form method="POST" class="mt-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" name="action" value="generate" 
+                    class="bg-journal-blue hover:bg-blue-800 text-white px-8 py-4 rounded-lg font-semibold text-xl transition-gentle btn-large focus-visible:focus">
+                Get New Prompt
+            </button>
+        </form>
+    </div>
+
+    <!-- Writing Area -->
+    <div class="bg-white border-2 border-gray-300 rounded-xl shadow-lg p-8">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-journal-blue rounded-full flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path>
+                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold text-journal-gray">Write Your Entry</h2>
+        </div>
         
         <form method="POST">
-
-            <!-- Button to regenerate the prompt -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" name="action" value="generate">Regenerate Prompt</button>
-
-            <!-- Textbox for journaling and saving the journal -->
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <textarea name="journal_entry" placeholder="Start journaling here...">{{ journal_content }}</textarea>            
             <input type="hidden" name="generated_prompt" value="{{ prompt }}">
             <input type="hidden" name="entry_id" value="{{ entry_id }}">
             
-            <!-- Buttons for saving the journal and generating follow-up question -->
-            <div class="button-container">
-                <button type="submit">Save Journal</button>
-                <a href="/entries">
-                    <button type="button">Review Journals</button>
-                </a> 
+            <!-- Large, Easy-to-Use Text Area -->
+            <textarea name="journal_entry" 
+                      placeholder="Take your time and write about whatever comes to mind. There's no rush - just let your thoughts flow naturally..."
+                      class="w-full h-80 p-6 text-xl leading-relaxed border-2 border-gray-300 rounded-lg focus:border-journal-blue focus:outline-none focus-visible:focus resize-none"
+                      style="font-family: Georgia, serif; line-height: 1.8;">{{ journal_content }}</textarea>
+            
+            <!-- Action Buttons - Large and Clear -->
+            <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                <button type="submit" 
+                        class="bg-journal-green hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-xl transition-gentle btn-large focus-visible:focus flex-1">
+                    💾 Save My Entry
+                </button>
+                
+                <a href="/entries" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-lg font-semibold text-xl transition-gentle btn-large text-center flex-1">
+                    📖 View Past Entries
+                </a>
             </div>
         </form>
     </div>
-</body>
-</html>
+
+    <!-- Helpful Tips for Elderly Users -->
+    <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mt-8">
+        <h3 class="text-2xl font-bold text-journal-blue mb-4">💡 Writing Tips</h3>
+        <ul class="text-xl text-journal-gray space-y-2">
+            <li>• Don't worry about spelling or grammar - just write from the heart</li>
+            <li>• You can save your entry and come back to it later</li>
+            <li>• Try to write for at least 5-10 minutes</li>
+            <li>• Include details about how you're feeling today</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
