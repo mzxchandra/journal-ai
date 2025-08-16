@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: journal-ai
+    runtime: python3
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: journal-ai-db
+          property: connectionString
+      - key: GOOGLE_STUDIO_API_KEY
+        sync: false
+    plan: starter
+
+databases:
+  - name: journal-ai-db
+    databaseName: journal_ai
+    user: journal_ai_user
+    plan: starter
