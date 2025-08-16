@@ -6,14 +6,17 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import json
 
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 SECRET_KEY = os.getenv('SECRET_KEY')
-HUGGINGFACE_TOKEN = os.getenv('HUGGINGFACE_TOKEN')
-API_URL = "https://api-inference.huggingface.co/models/google/gemma-2-2b-it"
-headers = {"Authorization": f"Bearer {HUGGINGFACE_TOKEN}"}
-max_token_value = 75
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GOOGLE_API_KEY}"
+headers = {"Content-Type": "application/json"}
+max_token_value = 100
+
+print("DATABASE_URL:", DATABASE_URL)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
@@ -45,14 +48,16 @@ class User(db.Model):
     pin = db.Column(db.String(4), nullable=False) #4-digit pin for the user
 
 prompt_input = f"""
-    Generate a unique journaling prompt that encourages users to reflect on specific life moments. The prompt should help them recall and explore memorable events in detail, guiding them to introspect on how those experiences shaped their life, character, or relationships.
-    Here are a few examples:
-    - "Describe a time when you had to make a difficult decision that changed the course of your life. What led to the decision, and how did it affect you?"
-    - "Was there a moment you thought your life was truly in danger? What happened?"
-    - "Who is your best friend from highschool? What have you gone through together?"
-    - "What was the most memorable trip you ever took? What made it unforgettable?"
-    Have your response just be one clear and concise prompt in question form for the user, max new tokens you're allowed is {max_token_value}.
-    """
+Generate a thoughtful journaling prompt that encourages reflection on specific life moments. The prompt should help users recall and explore memorable experiences, guiding them to think about how those moments shaped their life, character, or relationships.
+
+Examples of good prompts:
+- "Describe a time when you had to make a difficult decision that changed your life. What led to that decision?"
+- "Tell me about a moment when you felt truly proud of yourself. What did you accomplish?"
+- "Who is someone from your past that you think about often? What made them special to you?"
+- "What was the most memorable trip or adventure you ever took? What made it unforgettable?"
+
+Please provide just one clear, engaging question that would inspire meaningful writing. Keep it conversational and warm in tone.
+"""
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -66,6 +71,11 @@ def signup():
         email = request.form.get("email")
         pin = request.form.get("pin")
 
+        # Validate input
+        if not email or not pin:
+            print("Missing email or pin")
+            return redirect("/signup")
+
         #check if the user exists
         user = User.query.filter_by(email=email).first()
         if user:
@@ -73,13 +83,19 @@ def signup():
             return redirect("/login")
         
         if len(pin) != 4 or not pin.isdigit():
+            print(f"Invalid pin: {pin}")
             # flash('Please enter a 4-digit PIN number')
-            return redirect(url_for('register'))
+            return redirect("/signup")
 
-        new_user = User(email=email, pin=pin)
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect("/login")
+        try:
+            new_user = User(email=email, pin=pin)
+            db.session.add(new_user)
+            db.session.commit()
+            return redirect("/login")
+        except Exception as e:
+            print(f"Error creating user: {e}")
+            db.session.rollback()
+            return redirect("/signup")
     return render_template("signup.html")
 
  # Route for logging in
@@ -113,35 +129,53 @@ def index():
     journal_entry = None
     
     if request.method == 'GET':
-        generated_prompt = generate_prompt()
-        journal_entry = JournalEntry(
-            title=generated_prompt,
-            content="",  # Empty content for now
-            date=datetime.now().strftime("%B %d, %Y"),
-            user_email=session["email"]
-        )
-        db.session.add(journal_entry)
-        db.session.commit()  # Save immediately
+        try:
+            generated_prompt = generate_prompt()
+            journal_entry = JournalEntry(
+                title=generated_prompt,
+                content="",  # Empty content for now
+                date=datetime.now().strftime("%B %d, %Y"),
+                user_email=session["email"]
+            )
+            db.session.add(journal_entry)
+            db.session.commit()  # Save immediately
+        except Exception as e:
+            print(f"Error in index GET: {e}")
+            # Return a simple fallback if database or API fails
+            return render_template("index.html", 
+                                 name=session['email'], 
+                                 prompt="What's on your mind today?", 
+                                 journal_content="", 
+                                 entry_id=None)
     
     else:
-        # Get committed ID
-        entry_id = request.form.get('entry_id')
-        journal_entry = JournalEntry.query.get(entry_id)
+        try:
+            # Get committed ID
+            entry_id = request.form.get('entry_id')
+            if entry_id:
+                journal_entry = JournalEntry.query.get(entry_id)
 
-        #regenerate prompt action
-        if request.form.get('action') == "generate":
-            journal_entry.title = generate_prompt()  # Update prompt
-            db.session.commit()  # Save the new prompt
-            return redirect(url_for('edit_entry', id=journal_entry.id))
+                #regenerate prompt action
+                if request.form.get('action') == "generate":
+                    journal_entry.title = generate_prompt()  # Update prompt
+                    db.session.commit()  # Save the new prompt
+                    return redirect(url_for('edit_entry', id=journal_entry.id))
 
-        # Handle saving the journal entry content
-        elif request.form.get('action') == "save":
-            journal_content = request.form.get('journal_entry')
-            if journal_content:
-                journal_entry.content = journal_content  # Update
-                db.session.commit()
+                # Handle saving the journal entry content
+                elif request.form.get('action') == "save":
+                    journal_content = request.form.get('journal_entry')
+                    if journal_content:
+                        journal_entry.content = journal_content  # Update
+                        db.session.commit()
+        except Exception as e:
+            print(f"Error in index POST: {e}")
+            return "An error occurred while processing your request.", 500
 
-    return render_template("index.html", name = session['email'], prompt=journal_entry.title, journal_content=journal_entry.content, entry_id=journal_entry.id)
+    return render_template("index.html", 
+                         name=session['email'], 
+                         prompt=journal_entry.title if journal_entry else "What's on your mind today?", 
+                         journal_content=journal_entry.content if journal_entry else "", 
+                         entry_id=journal_entry.id if journal_entry else None)
 
 
 # Route for viewing saved journal entries
@@ -222,34 +256,77 @@ def delete_entry(id):
 #requests.exceptions.ConnectionError: HTTPSConnectionPool(host='api-inference.huggingface.co', port=443): Max retries exceeded with url: /models/google/gemma-2-2b-it (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x10972b380>: Failed to resolve 'api-inference.huggingface.co' ([Errno 8] nodename nor servname provided, or not known)"))
 # We should have a protocol to use a different model
 
-# Function to query model for a prompt
-def query_huggingface_api(payload):
-    response = requests.post(API_URL, headers=headers, json=payload)
-    return response.json()
+# Function to query Google Gemini API
+def query_google_gemini_api(prompt_text):
+    payload = {
+        "contents": [{
+            "parts": [{
+                "text": prompt_text
+            }]
+        }],
+        "generationConfig": {
+            "temperature": 0.9,
+            "topK": 1,
+            "topP": 1,
+            "maxOutputTokens": max_token_value,
+            "stopSequences": []
+        },
+        "safetySettings": [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            }
+        ]
+    }
+    
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Google Gemini API: {e}")
+        return None
 
-# Function to extract the prompt from the generated text
-def extract_prompt(input: str, response: list[dict])-> str:
-    # Check if prompt exists in the generated text
-    generated_text = response[0]['generated_text']
-    generated_text = generated_text.replace(input, "") if input in generated_text else generated_text
-    generated_text = generated_text.strip()
-    generated_text = generated_text.replace("\\'", "'")
-    return generated_text  # Return the full text if input prompt not found
+# Function to extract the response text from Google Gemini API response
+def extract_gemini_response(response_data):
+    if response_data and 'candidates' in response_data:
+        if len(response_data['candidates']) > 0:
+            candidate = response_data['candidates'][0]
+            if 'content' in candidate and 'parts' in candidate['content']:
+                if len(candidate['content']['parts']) > 0:
+                    return candidate['content']['parts'][0]['text'].strip()
+    return "Sorry, I couldn't generate a response at the moment."
 
 # Function to generate an initial prompt
 def generate_prompt():
-    response = query_huggingface_api({
-    "inputs": prompt_input,
-    "parameters": {
-        "max_new_tokens": max_token_value,
-        "temperature": 0.9,
-        "num_return_sequences": 1,
-        "stop_sequences": [".", "?"] #only stop when a sentence ends
-    }
-})
-    generated_prompt = extract_prompt(prompt_input, response)
-    print("Generated Prompt:", generated_prompt)
-    return generated_prompt
+    response_data = query_google_gemini_api(prompt_input)
+    if response_data:
+        generated_prompt = extract_gemini_response(response_data)
+        print("Generated Prompt:", generated_prompt)
+        return generated_prompt
+    else:
+        # Fallback prompt if API fails
+        fallback_prompts = [
+            "What was the most meaningful conversation you had this week?",
+            "Describe a moment today when you felt truly grateful.",
+            "What's one thing you learned about yourself recently?",
+            "Tell me about a person who has had a positive impact on your life.",
+            "What's a small victory you experienced recently?"
+        ]
+        import random
+        return random.choice(fallback_prompts)
     
 # Function to generate a follow-up question based on a journal entry
 def generate_followup_question(content):
@@ -257,17 +334,22 @@ def generate_followup_question(content):
     Generate a follow-up question based on the following journal entry:
     "{content}"
     The follow-up question should encourage the user to delve deeper into the topic, reflect on their emotions, or explore related experiences. It should be open-ended and engaging, prompting the user to write more about the topic.
-    Response should include one clear concise question, asked in a conversational tone, max new tokens you're allowed is {max_token_value}.
+    Response should include one clear concise question, asked in a conversational tone, maximum {max_token_value} tokens.
     """
-    # Query the model with the follow-up input
-    response = query_huggingface_api({
-        "inputs": followup_input,
-        "parameters": {
-            "max_new_tokens": max_token_value,
-            "temperature": 0.9,
-            "num_return_sequences": 1
-        }
-    })
-    generated_followup = extract_prompt(followup_input, response)
-    print(f"Generated Followup: {generated_followup}")
-    return generated_followup
+    
+    response_data = query_google_gemini_api(followup_input)
+    if response_data:
+        generated_followup = extract_gemini_response(response_data)
+        print(f"Generated Followup: {generated_followup}")
+        return generated_followup
+    else:
+        # Fallback questions if API fails
+        fallback_questions = [
+            "How did this experience change your perspective?",
+            "What emotions were you feeling during this time?",
+            "What would you tell someone else going through something similar?",
+            "How does this memory make you feel now when you look back on it?",
+            "What did you learn about yourself from this experience?"
+        ]
+        import random
+        return random.choice(fallback_questions)
