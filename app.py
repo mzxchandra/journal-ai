@@ -44,7 +44,8 @@ app = Flask(__name__)
 # App Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SESSION_TYPE'] = "filesystem"
+app.config['SESSION_TYPE'] = 'sqlalchemy'
+app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'
 app.config['SESSION_PERMANENT'] = False
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
@@ -64,6 +65,9 @@ else:
     app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
 
 db = SQLAlchemy(app)
+
+# Configure session after db is initialized
+app.config['SESSION_SQLALCHEMY'] = db
 Session(app)
 csrf = CSRFProtect(app) #https://www.geeksforgeeks.org/csrf-protection-in-flask/
 
@@ -78,6 +82,13 @@ class JournalEntry(db.Model):
 class User(db.Model):
     email = db.Column(db.String(50), nullable=False, unique=True, primary_key=True) #email is the primary key
     pin = db.Column(db.String(4), nullable=False) #4-digit pin for the user
+
+# Add session table for Flask-Session
+class Sessions(db.Model):
+    __tablename__ = 'sessions'
+    id = db.Column(db.String(255), primary_key=True)
+    data = db.Column(db.LargeBinary)
+    expiry = db.Column(db.DateTime)
 
 prompt_input = f"""
 Generate a thoughtful journaling prompt that encourages reflection on specific life moments. The prompt should help users recall and explore memorable experiences, guiding them to think about how those moments shaped their life, character, or relationships.
@@ -123,7 +134,7 @@ def internal_error(error):
 def shutdown_session(exception=None):
     db.session.remove()
 
-# Health check endpoint for Railway
+# Health check endpoint
 @app.route('/health')
 def health_check():
     """Health check endpoint for monitoring."""
