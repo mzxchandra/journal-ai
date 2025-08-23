@@ -5,14 +5,13 @@ This will be run automatically when the app starts for the first time.
 """
 
 import os
-from app import app, db
+from app import app, create_tables
 
 def init_production_db():
     """Initialize production database with tables."""
     with app.app_context():
         try:
-            # Create all tables
-            db.create_all()
+            create_tables()
             print("✅ Production database tables created successfully!")
             return True
         except Exception as e:

@@ -18,3 +18,19 @@ Frontend: HTML
 Other Tools: Huggingface API
 
 Deployed on: [python anywhere](mzxchandra.pythonanywhere.com)
+
+## Database initialization
+
+In production the database tables are created separately. Run the setup once during deployment:
+
+```
+ENVIRONMENT=production python init_prod_db.py
+```
+
+Alternatively, trigger the `/init-db` endpoint with a POST request:
+
+```
+curl -X POST "https://<your-domain>/init-db?secret=$INIT_DB_SECRET"
+```
+
+This step should be executed once via your CI/CD pipeline or migration tool.
