@@ -13,7 +13,7 @@ import logging
 load_dotenv()
 
 # Configuration
-DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('DATABASE_PRIVATE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 # For production, ensure we use psycopg3 dialect and handle both URL formats
 if DATABASE_URL:
@@ -23,17 +23,18 @@ if DATABASE_URL:
     elif DATABASE_URL.startswith('postgresql://'):
         DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
     
-    # Ensure SSL mode for Supabase connections
-    if 'supabase.co' in DATABASE_URL and 'sslmode=' not in DATABASE_URL:
+    # For Supabase pooler connections, don't add SSL parameters - they're handled automatically
+    # Only add SSL for direct connections (port 5432)
+    if 'supabase.co' in DATABASE_URL and ':5432' in DATABASE_URL and 'sslmode=' not in DATABASE_URL:
         separator = '&' if '?' in DATABASE_URL else '?'
         DATABASE_URL += f'{separator}sslmode=require'
-    # For serverless (Vercel) use PgBouncer on 6543 unless explicitly opted out
-    if (
-        'supabase.co' in DATABASE_URL 
-        and (':5432/' in DATABASE_URL or ':5432?' in DATABASE_URL) 
-        and os.getenv('USE_DIRECT_DB', '0') != '1'
-    ):
-        DATABASE_URL = DATABASE_URL.replace(':5432', ':6543', 1)
+    
+    # Clean up any pgbouncer parameters that might cause issues
+    if '?pgbouncer=true' in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace('?pgbouncer=true', '')
+    if '&pgbouncer=true' in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace('&pgbouncer=true', '')
+        
 elif not DATABASE_URL:
     DATABASE_URL = 'sqlite:///journal.db'
 
