@@ -246,13 +246,18 @@ def login():
         pin = request.form.get("pin")
         # check if the user exists
         user = User.query.filter_by(email=email).first() #querying the supposed user
-        if user and user.pin == pin:
-            session["email"] = user.email #storing in session
-            return redirect("/")
-        # redirect to the main page
-        return redirect("/")
-    else: #If user is not registered
-        return redirect("/signup")
+        if user:
+            # check if password correct
+            if user.pin == pin:
+                session["email"] = user.email #storing in session
+                return redirect("/")
+            else:
+                #password incorrect
+                return render_template("login.html", error="Invalid PIN")
+        else:
+            # User doesn't exist, redirect to signup
+            return redirect("/signup")
+    return render_template("login.html")
 
 # Route for logging out
 @app.route("/logout")
