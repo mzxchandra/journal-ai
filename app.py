@@ -1,8 +1,8 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_session import Session
 from flask_wtf import CSRFProtect
+from sqlalchemy.pool import NullPool
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
@@ -54,9 +54,6 @@ app = Flask(__name__)
 # App Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SESSION_TYPE'] = 'sqlalchemy'
-app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'
-app.config['SESSION_PERMANENT'] = False
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
 
@@ -64,21 +61,13 @@ app.config['WTF_CSRF_ENABLED'] = True
 if ENVIRONMENT == 'production':
     app.config['DEBUG'] = False
     app.config['SQLALCHEMY_ECHO'] = False
-    app.config['SQLALCHEMY_POOL_SIZE'] = 20
-    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
-    app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = { 'poolclass': NullPool, 'pool_pre_ping': True }
 else:
     app.config['DEBUG'] = True
     app.config['SQLALCHEMY_ECHO'] = True
-    app.config['SQLALCHEMY_POOL_SIZE'] = 10
-    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 30
-    app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = { 'pool_pre_ping': True }
 
 db = SQLAlchemy(app)
-
-# Configure session after db is initialized
-app.config['SESSION_SQLALCHEMY'] = db
-Session(app)
 csrf = CSRFProtect(app) #https://www.geeksforgeeks.org/csrf-protection-in-flask/
 
 class JournalEntry(db.Model):
@@ -90,15 +79,9 @@ class JournalEntry(db.Model):
 
 #https://flask-user.readthedocs.io/en/latest/data_models.html
 class User(db.Model):
+    __tablename__ = 'app_user'
     email = db.Column(db.String(50), nullable=False, unique=True, primary_key=True) #email is the primary key
     pin = db.Column(db.String(4), nullable=False) #4-digit pin for the user
-
-# Add session table for Flask-Session
-class Sessions(db.Model):
-    __tablename__ = 'sessions'
-    id = db.Column(db.String(255), primary_key=True)
-    data = db.Column(db.LargeBinary)
-    expiry = db.Column(db.DateTime)
 
 prompt_input = f"""
 Generate a thoughtful journaling prompt that encourages reflection on specific life moments. The prompt should help users recall and explore memorable experiences, guiding them to think about how those moments shaped their life, character, or relationships.
@@ -148,6 +131,56 @@ def internal_error(error):
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db.session.remove()
+
+
+# Debug: DB config peek
+@app.route('/debug/db')
+def debug_db():
+    try:
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        safe_uri = DATABASE_URL
+        if safe_uri:
+            # redact credentials
+            safe_uri = safe_uri.replace(GOOGLE_API_KEY or '', '***')
+            if '://' in safe_uri and '@' in safe_uri:
+                scheme, rest = safe_uri.split('://', 1)
+                creds, host = rest.split('@', 1)
+                safe_uri = f"{scheme}://***:***@{host}"
+        return {
+            "env": ENVIRONMENT,
+            "db_uri": safe_uri,
+            "status": "ok"
+        }, 200
+    except Exception as e:
+        return {"status": "error", "error": str(e)}, 500
+
+# Debug: DB write/read/delete smoke test
+@app.route('/debug/rw')
+def debug_rw():
+    try:
+        from sqlalchemy import text
+        # Insert a test row
+        ins = text("""
+            insert into journal_entry (title, content, date, user_email)
+            values (:t, :c, :d, :u)
+            returning id
+        """)
+        sel = text("select id, title from journal_entry where id = :id")
+        dele = text("delete from journal_entry where id = :id")
+        now = datetime.now().strftime("%B %d, %Y")
+        with db.engine.begin() as conn:
+            new_id = conn.execute(ins, {
+                't': 'DEBUG_WRITE',
+                'c': 'smoke test',
+                'd': now,
+                'u': 'debug@example.com'
+            }).scalar_one()
+            row = conn.execute(sel, { 'id': new_id }).mappings().first()
+            conn.execute(dele, { 'id': new_id })
+        return {"status": "ok", "inserted": dict(row) if row else None}, 200
+    except Exception as e:
+        return {"status": "error", "error": str(e)}, 500
 
 # Health check endpoint
 @app.route('/health')
