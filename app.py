@@ -58,7 +58,7 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
 
 # Production vs Development settings
-if ENVIRONMENT == 'production':
+if ENVIRONMENT.lower() == 'production':
     app.config['DEBUG'] = False
     app.config['SQLALCHEMY_ECHO'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = { 'poolclass': NullPool, 'pool_pre_ping': True }
