@@ -1,6 +1,6 @@
 # journal-ai
 
-[mzxchandra.pythonanywhere.com](mzxchandra.pythonanywhere.com)
+[DEPLOYED ON VERCEL](https://better-days.vercel.app/)
 
 Web App helping elderly users journal. Uses API calls to Google's Gemma model to generate prompts and ask follow-up questions.
 
@@ -15,13 +15,13 @@ Backend: Flask
 
 Frontend: HTML
 
-Other Tools: Huggingface API
+Other Tools: Google Vertex AI API
 
-Deployed on: [python anywhere](mzxchandra.pythonanywhere.com)
+Deployed on: Vercel
 
 ## Database initialization
 
-In production the database tables are created separately. Run the setup once during deployment:
+In production, the database tables are created separately. Run the setup once during deployment:
 
 ```
 ENVIRONMENT=production python init_prod_db.py
