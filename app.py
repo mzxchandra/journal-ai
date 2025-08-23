@@ -15,16 +15,20 @@ load_dotenv()
 # Configuration
 DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('DATABASE_PRIVATE_URL')
 
-# For production, ensure we use psycopg3 dialect
-if DATABASE_URL and DATABASE_URL.startswith('postgresql://'):
-    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+# For production, ensure we use psycopg3 dialect and handle both URL formats
+if DATABASE_URL:
+    # Handle both postgres:// and postgresql:// formats from Supabase
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
+    elif DATABASE_URL.startswith('postgresql://'):
+        DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
+    
+    # Ensure SSL mode for Supabase connections
+    if 'supabase.co' in DATABASE_URL and 'sslmode=' not in DATABASE_URL:
+        separator = '&' if '?' in DATABASE_URL else '?'
+        DATABASE_URL += f'{separator}sslmode=require'
 elif not DATABASE_URL:
-    logging.error(
-        "DATABASE_URL or DATABASE_PRIVATE_URL is required. Set it to your Supabase connection string."
-    )
-    raise RuntimeError(
-        "Missing database configuration. Please set DATABASE_URL or DATABASE_PRIVATE_URL with your Supabase connection string."
-    )
+    DATABASE_URL = 'sqlite:///journal.db'
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
