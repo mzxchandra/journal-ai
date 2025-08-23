@@ -27,6 +27,13 @@ if DATABASE_URL:
     if 'supabase.co' in DATABASE_URL and 'sslmode=' not in DATABASE_URL:
         separator = '&' if '?' in DATABASE_URL else '?'
         DATABASE_URL += f'{separator}sslmode=require'
+    # For serverless (Vercel) use PgBouncer on 6543 unless explicitly opted out
+    if (
+        'supabase.co' in DATABASE_URL 
+        and (':5432/' in DATABASE_URL or ':5432?' in DATABASE_URL) 
+        and os.getenv('USE_DIRECT_DB', '0') != '1'
+    ):
+        DATABASE_URL = DATABASE_URL.replace(':5432', ':6543', 1)
 elif not DATABASE_URL:
     DATABASE_URL = 'sqlite:///journal.db'
 
