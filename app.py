@@ -24,6 +24,7 @@ elif not DATABASE_URL:
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+INIT_DB_SECRET = os.getenv('INIT_DB_SECRET')
 
 # API Configuration
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GOOGLE_API_KEY}"
@@ -103,7 +104,7 @@ Please provide just one clear, engaging question that would inspire meaningful w
 """
 
 def create_tables():
-    """Create database tables on first request in production."""
+    """Create database tables in production."""
     if ENVIRONMENT == 'production':
         try:
             db.create_all()
@@ -111,10 +112,15 @@ def create_tables():
         except Exception as e:
             logging.error(f"Error creating database tables: {e}")
 
-# Call create_tables when app starts in production
-if ENVIRONMENT == 'production':
-    with app.app_context():
-        create_tables()
+
+@app.route('/init-db', methods=['POST'])
+def init_db():
+    """Endpoint to initialize database tables once in production."""
+    secret = request.args.get('secret')
+    if INIT_DB_SECRET and secret != INIT_DB_SECRET:
+        return {"error": "Unauthorized"}, 403
+    create_tables()
+    return {"status": "initialized"}, 200
 
 @app.errorhandler(404)
 def not_found(error):
