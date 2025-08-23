@@ -19,7 +19,12 @@ DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('DATABASE_PRIVATE_URL')
 if DATABASE_URL and DATABASE_URL.startswith('postgresql://'):
     DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
 elif not DATABASE_URL:
-    DATABASE_URL = 'sqlite:///journal.db'
+    logging.error(
+        "DATABASE_URL or DATABASE_PRIVATE_URL is required. Set it to your Supabase connection string."
+    )
+    raise RuntimeError(
+        "Missing database configuration. Please set DATABASE_URL or DATABASE_PRIVATE_URL with your Supabase connection string."
+    )
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
