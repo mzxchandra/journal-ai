@@ -251,7 +251,8 @@ def login():
             return redirect("/")
         # redirect to the main page
         return redirect("/")
-    return render_template("login.html")
+    else: #If user is not registered
+        return redirect("/signup")
 
 # Route for logging out
 @app.route("/logout")
