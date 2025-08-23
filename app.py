@@ -32,7 +32,7 @@ elif not DATABASE_URL:
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+ENVIRONMENT = (os.getenv('ENVIRONMENT', 'development') or 'development').lower()
 INIT_DB_SECRET = os.getenv('INIT_DB_SECRET')
 
 # API Configuration
@@ -58,7 +58,7 @@ app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
 
 # Production vs Development settings
-if ENVIRONMENT.lower() == 'production':
+if ENVIRONMENT == 'production':
     app.config['DEBUG'] = False
     app.config['SQLALCHEMY_ECHO'] = False
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = { 'poolclass': NullPool, 'pool_pre_ping': True }
