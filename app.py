@@ -312,6 +312,8 @@ def index():
                     if journal_content:
                         journal_entry.content = journal_content  # Update
                         db.session.commit()
+                    # After saving, reload the entry from DB to get the latest content
+                    journal_entry = JournalEntry.query.get(entry_id)
         except Exception as e:
             print(f"Error in index POST: {e}")
             return "An error occurred while processing your request.", 500
