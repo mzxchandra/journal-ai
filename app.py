@@ -4,6 +4,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from sqlalchemy.pool import NullPool
 import requests
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import json
+import logging
+from sqlalchemy.pool import NullPool
+import requests
 from datetime import datetime
 from dotenv import load_dotenv
 import json
@@ -64,6 +70,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['WTF_CSRF_ENABLED'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)  # Sessions expire after 24 hours
 
 # Production vs Development settings
 if ENVIRONMENT == 'production':
@@ -77,6 +84,27 @@ else:
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app) #https://www.geeksforgeeks.org/csrf-protection-in-flask/
+
+# Force HTTPS in production
+@app.before_request
+def force_https():
+    if ENVIRONMENT == 'production' and not request.is_secure and not request.headers.get('X-Forwarded-Proto') == 'https':
+        return redirect(request.url.replace('http://', 'https://'), code=301)
+
+# Check session validity
+@app.before_request
+def check_session():
+    # Skip auth checks for static files, login, signup, and health endpoints
+    if request.endpoint in ['static', 'login', 'signup', 'health_check', 'debug_db', 'debug_rw']:
+        return
+    
+    # Check if user is logged in for protected routes
+    if 'email' not in session and request.endpoint not in ['login', 'signup']:
+        return redirect('/login')
+    
+    # Refresh session timestamp
+    if 'email' in session:
+        session.permanent = True
 
 class JournalEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -340,8 +368,11 @@ def edit_entry(id):
     if 'email' not in session:
         return redirect("/login")
     try:
-        # Query the journal entry by its ID
-        entry = JournalEntry.query.get_or_404(id)
+        # Query the journal entry by its ID AND ensure it belongs to the current user
+        entry = JournalEntry.query.filter_by(id=id, user_email=session['email']).first()
+        if not entry:
+            return "Journal entry not found or you don't have permission to access it.", 404
+            
         if request.method == 'POST':
             action = request.form.get('action')
 
@@ -371,15 +402,16 @@ def delete_entry(id):
     if 'email' not in session:
         return redirect("/login")
     try:
-        # Query the journal entry by its ID
-        entry = JournalEntry.query.get(id)
+        # Query the journal entry by its ID AND ensure it belongs to the current user
+        entry = JournalEntry.query.filter_by(id=id, user_email=session['email']).first()
         if entry:
             db.session.delete(entry)
             db.session.commit()
             return redirect(url_for('view_entries'))
-        return "Journal entry not found.", 404
+        return "Journal entry not found or you don't have permission to delete it.", 404
     except Exception as e:
         db.session.rollback()  # Rollback in case of any error
+        return "An error occurred while processing your request.", 500
 
 # # Route for deleting all journal entries if necessary
 # @app.route('/delete_all_entries', methods=['POST', 'GET'])
