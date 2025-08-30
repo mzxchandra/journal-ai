@@ -306,14 +306,14 @@ def index():
                     db.session.commit()  # Save the new prompt
                     return redirect(url_for('edit_entry', id=journal_entry.id))
 
-                # Handle saving the journal entry content
-                elif request.form.get('action') == "save":
+                # Handle saving the journal entry content (default action or explicit save)
+                elif request.form.get('action') == "save" or not request.form.get('action'):
                     journal_content = request.form.get('journal_entry')
-                    if journal_content:
+                    if journal_content is not None:  # Allow empty content to be saved
                         journal_entry.content = journal_content  # Update
                         db.session.commit()
-                    # After saving, reload the entry from DB to get the latest content
-                    journal_entry = JournalEntry.query.get(entry_id)
+                        # After saving, reload the entry from DB to get the latest content
+                        journal_entry = JournalEntry.query.get(entry_id)
         except Exception as e:
             print(f"Error in index POST: {e}")
             return "An error occurred while processing your request.", 500
